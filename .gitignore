@@ -1,0 +1,19 @@
+# Experiment outputs
+experiment/
+datasets/
+pretrained_model/
+*.pt
+*.pth
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+
+# Logs and scratch
+*.log
+wandb/
+tb_logger/
+.DS_Store

@@ -1,0 +1,13 @@
+# Tested with Python 3.9 / CUDA 11.3
+torch>=1.10
+torchvision>=0.11
+numpy>=1.21
+scipy>=1.7
+scikit-learn>=1.0
+imageio>=2.9
+opencv-python>=4.5
+tqdm>=4.62
+matplotlib>=3.4
+# only needed by tools/plot_activation_distribution.py
+seaborn>=0.11
+sympy>=1.9
