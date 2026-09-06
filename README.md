@@ -204,8 +204,7 @@ cd src && python ../tools/plot_activation_distribution.py \
 ## Acknowledgements
 
 This implementation builds on [AdaBM](https://github.com/Cheeun/AdaBM) and
-[EDSR-PyTorch](https://github.com/thstkdgus35/EDSR-PyTorch), and the piecewise
-quantizer primitives follow [PWLQ](https://github.com/jun-fang/PWLQ). We thank the
+[EDSR-PyTorch](https://github.com/thstkdgus35/EDSR-PyTorch). We thank the
 authors for releasing their code.
 
 ## Contact
