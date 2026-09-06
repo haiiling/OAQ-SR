@@ -27,10 +27,7 @@
     <div class="links">
       <a href="#overview">Overview</a>
       <a href="#findings">Findings</a>
-      <a href="#method">Method</a>
-      <a href="#playground">Playground</a>
       <a href="#results">Results</a>
-      <a href="#efficiency">Efficiency</a>
       <a href="#bibtex">BibTeX</a>
     </div>
   </div>
@@ -40,18 +37,11 @@
 <header class="hero">
   <div class="wrap">
     <div class="venue">ICCV 2025</div>
-    <h1 class="title">Outlier-Aware<br>Post-Training Quantization<br>for <span class="accent">Image Super-Resolution</span></h1>
-    <p class="subtitle">
-      Activation outliers carry the colour of a super-resolved image. We keep them —
-      by splitting the activation range in two and quantizing each part on its own —
-      and reach quantization-aware-training quality without retraining, without ground
-      truth, and roughly <b>75× faster</b>.
-    </p>
-
+    <h1 class="title">Outlier-Aware Post-Training Quantization for <span class="accent">Image Super-Resolution</span></h1>
     <p class="authors">
-      Hailing Wang<sup>✉</sup> &nbsp;·&nbsp; Jianglin Lu &nbsp;·&nbsp; Yitian Zhang &nbsp;·&nbsp; Yun Fu
+      Hailing Wang<sup>*</sup> &nbsp;·&nbsp; Jianglin Lu &nbsp;·&nbsp; Yitian Zhang &nbsp;·&nbsp; Yun Fu
     </p>
-    <p class="affil">Northeastern University, USA &nbsp;·&nbsp; <sup>✉</sup> corresponding author</p>
+    <p class="affil">Northeastern University, USA &nbsp;·&nbsp; <sup>*</sup> corresponding author</p>
 
     <div class="buttons">
       <a class="btn primary" href="https://arxiv.org/abs/2511.00682">
@@ -167,7 +157,7 @@
       <figcaption><b>Drag the handle.</b> Both rows come from the same full-precision model. On the right, 1 % of the activation outliers were clipped — the colours drift noticeably, which is why the outlier region must be preserved rather than discarded.</figcaption>
     </figure>
 
-    <div class="grid-2 reveal" style="margin-top:44px; align-items:start">
+    <div class="grid-2 reveal" style="margin-top:44px; align-items:center">
       <figure style="margin:0">
         <img src="static/figures/activation_dist.png" alt="Activation distributions of three samples at the same EDSR layer">
         <figcaption><b>Sample-dependent outliers.</b> Three samples at the same layer (<code class="inline">body.15.conv1</code>) of EDSR. The bulk sits in a narrow dense region, but the outlier bounds swing from −192 to −273 across samples.</figcaption>
@@ -176,114 +166,6 @@
         <img src="static/figures/layer_sensitivity.png" alt="Per-layer sensitivity of EDSR and SRResNet to 4-bit quantization">
         <figcaption><b>Per-layer sensitivity.</b> 4-bit quantization applied to one layer at a time. Some layers barely move; others collapse by more than 14 dB.</figcaption>
       </figure>
-    </div>
-  </div>
-</section>
-
-<!-- ========================================================== METHOD -->
-<section id="method">
-  <div class="wrap">
-    <div class="narrow reveal" style="margin-left:0">
-      <div class="eyebrow">Method</div>
-      <h2>Split the range, then spend the effort where it hurts</h2>
-      <p class="lead">Two components, both of which run on 100 unlabelled low-resolution images.</p>
-    </div>
-
-    <div class="grid-2 reveal" style="margin-top:34px">
-      <div class="card">
-        <div class="eyebrow" style="color:var(--outlier)">Component 1</div>
-        <h3>Piecewise Linear Quantizer (PLQ)</h3>
-        <p>
-          Given the activation range <code class="inline">[l_a, u_a]</code>, a breakpoint
-          <code class="inline">bp</code> — the 99th percentile of the activations — divides it
-          into a symmetric <b style="color:var(--dense)">dense region</b>
-          <code class="inline">[−bp, bp]</code> and an
-          <b style="color:var(--outlier)">outlier region</b>
-          <code class="inline">[l_a, −bp) ∪ (bp, u_a]</code>.
-        </p>
-        <p style="margin-bottom:0">
-          The dense region gets the full <code class="inline">b</code>-bit grid; each tail gets
-          its own <code class="inline">b−1</code>-bit grid. Outliers survive without stealing
-          resolution from the bulk of the distribution — which a single uniform quantizer over
-          <code class="inline">[l_a, u_a]</code> cannot avoid.
-        </p>
-      </div>
-      <div class="card">
-        <div class="eyebrow" style="color:var(--outlier)">Component 2</div>
-        <h3>Sensitivity-Aware Finetuning (SAFT)</h3>
-        <p>
-          During calibration we measure each layer's quantization sensitivity
-          <code class="inline">s_k</code> as a softmax over the mean standard deviation of its
-          feature map. The finetuning objective then weights each layer's feature-matching term
-          by <code class="inline">s_k</code>:
-        </p>
-        <p style="margin-bottom:0">
-          <code class="inline">L = L_sen + λ·L_rec</code>, where <code class="inline">L_rec</code>
-          matches the quantized output to the <em>full-precision</em> output — so no
-          ground-truth HR image is ever needed. Quantization parameters
-          (<code class="inline">u_w</code>, then <code class="inline">l_a, u_a</code>, then
-          <code class="inline">bp</code>) are refreshed in a three-stage cycle over 10 epochs.
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ====================================================== PLAYGROUND -->
-<section id="playground">
-  <div class="wrap">
-    <div class="narrow reveal" style="margin-left:0">
-      <div class="eyebrow">Interactive</div>
-      <h2>See the bit-width trade-off</h2>
-      <p>
-        A synthetic activation distribution with the skew and heavy tails typical of an SR
-        network. Switch the quantizer and watch where the quantization points land — and what
-        that costs in quantization error.
-      </p>
-    </div>
-
-    <div class="lab reveal" style="margin-top:30px">
-      <div class="canvas-wrap">
-        <canvas id="plq-canvas" aria-label="Interactive activation histogram with quantization points"></canvas>
-        <div class="legend">
-          <span><i style="background:var(--dense)"></i>dense region</span>
-          <span><i style="background:var(--outlier)"></i>outlier region</span>
-          <span><i style="background:#e9ecf3"></i>breakpoint</span>
-        </div>
-      </div>
-
-      <div class="controls">
-        <div class="control">
-          <label>Quantizer</label>
-          <div class="seg" id="plq-mode">
-            <button data-mode="minmax" aria-pressed="false">MinMax</button>
-            <button data-mode="percentile" aria-pressed="false">Clip</button>
-            <button data-mode="ours" aria-pressed="true">Ours</button>
-          </div>
-        </div>
-
-        <div class="control">
-          <label>Bit-width <b id="plq-bits-val">4-bit</b></label>
-          <input type="range" id="plq-bits" min="3" max="8" step="1" value="4">
-        </div>
-
-        <div class="control" id="plq-bp-row">
-          <label>Breakpoint percentile <b id="plq-bp-val">99.0th</b></label>
-          <input type="range" id="plq-bp" min="900" max="999" step="1" value="990">
-        </div>
-
-        <div class="readout">
-          <div class="row"><span>Quantization MSE</span><b id="plq-mse">—</b></div>
-          <div class="row"><span>vs. MinMax</span><b id="plq-gain">—</b></div>
-          <div class="row"><span>Levels used</span><b id="plq-levels">—</b></div>
-        </div>
-
-        <p style="font-size:12.5px;color:var(--muted);margin:0;line-height:1.5">
-          MinMax stretches one grid over the full range, so the dense bulk gets almost no
-          resolution. Clipping the tails sharpens the bulk but throws the outliers — and the
-          colour information they carry — away. The piecewise quantizer keeps both.
-        </p>
-      </div>
     </div>
   </div>
 </section>
@@ -411,34 +293,6 @@
         actively wastes the calibration budget.
       </p>
     </div>
-
-    <figure class="reveal" style="margin-top:60px">
-      <img src="static/figures/qualitative.jpg" alt="Visual comparison between PTQ methods using RDN under W4A4" loading="lazy">
-      <figcaption><b>Figure 5 from the paper.</b> MinMax leaves noise artifacts; Percentile shifts colours because it clips the outliers; PTQ4SR and AdaBM blur detail-rich regions. Our method preserves texture without introducing noise or colour distortion.</figcaption>
-    </figure>
-  </div>
-</section>
-
-<!-- ====================================================== EFFICIENCY -->
-<section id="efficiency">
-  <div class="wrap narrow reveal">
-    <div class="eyebrow">Cost</div>
-    <h2>Quality without a resource bill</h2>
-    <p>All measurements on a single NVIDIA GeForce RTX 2080 Ti, EDSR ×4.</p>
-    <div class="table-scroll" style="margin-top:22px">
-      <table style="min-width:480px">
-        <thead><tr><th>Method</th><th>Processing time</th><th>Latency</th><th>Storage</th></tr></thead>
-        <tbody>
-          <tr><td>PTQ4SR</td><td>126 s</td><td>133 ms</td><td>229.5 KB</td></tr>
-          <tr><td>AdaBM</td><td>72 s</td><td>143 ms</td><td>229.5 KB</td></tr>
-          <tr class="ours"><td>Ours</td><td>73 s</td><td>135 ms</td><td>229.5 KB</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p style="font-size:13px;color:var(--muted);margin-top:14px">
-      Same storage, comparable latency, and no additional resource demand — the gains come from
-      how the bit-width is allocated, not from spending more of it.
-    </p>
   </div>
 </section>
 
